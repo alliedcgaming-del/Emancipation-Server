@@ -1,0 +1,8 @@
+# ignore sensitive files
+.env
+
+# ignore dependencies
+node_modules/
+
+# ignore log files
+npm-debug.log*

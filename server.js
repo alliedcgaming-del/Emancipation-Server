@@ -2,15 +2,18 @@ import express from "express";
 import bodyParser from "body-parser";
 import nodemailer from "nodemailer";
 import cors from "cors";
-app.use(cors());
+import dotenv from "dotenv";
 
+dotenv.config();
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json());
 
 let latestData = {};
 let lastUpdated = Date.now();
 
+// ✅ Upload endpoint (Unity will POST here)
 app.post("/upload", (req, res) => {
   latestData = req.body;
   lastUpdated = Date.now();
@@ -19,33 +22,36 @@ app.post("/upload", (req, res) => {
   res.status(200).send("Received JSON");
 });
 
-// every 1 minute check if 5 minutes have passed
+// ✅ Periodically check every minute
 setInterval(async () => {
   if (Object.keys(latestData).length > 0) {
     const diff = (Date.now() - lastUpdated) / 1000 / 60;
     console.log(`⏳ [CHECK] ${diff.toFixed(2)} minutes since last update`);
-    if (diff >= 5) {
-      console.log("📬 [ACTION] 5 minutes passed — sending email...");
+
+    if (diff >= 10) { // Changed to 10 minutes
+      console.log("📬 [ACTION] 10 minutes passed — sending email...");
       await sendEmail(latestData);
       latestData = {};
     }
   } else {
     console.log("💤 [CHECK] No data to send yet...");
   }
-}, 60000);
+}, 60000); // check every 60 seconds
 
+// ✅ Email sending logic
 async function sendEmail(data) {
   console.log("📧 [EMAIL] Preparing to send email...");
+
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: "allgamees111@gmail.com",
-      pass: "sjmf oozo jzez piyb", // your app password
+      user: process.env.EMAIL_USER, // from .env
+      pass: process.env.EMAIL_PASS, // from .env
     },
   });
 
   const mailOptions = {
-    from: "allgamees111@gmail.com",
+    from: process.env.EMAIL_USER,
     to: "alliedcgaming@gmail.com",
     cc: "alliedcgaming@gmail.com",
     subject: "Player Data JSON",
@@ -60,4 +66,6 @@ async function sendEmail(data) {
   }
 }
 
-app.listen(3000, () => console.log("🚀 [SERVER] Running on port 3000"));
+// ✅ Use Render’s dynamic port
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 [SERVER] Running on port ${PORT}`));
